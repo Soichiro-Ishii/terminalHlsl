@@ -17,13 +17,13 @@ SamplerState smp : register(s0);
 //初期値
 #define numMaterials 2
 #define MAX_STEPS 1000
-#define MAX_DIST 10
+#define MAX_DIST 1000
 #define SURF_DIST 0.01
 static const float PI = 3.14159265358979f;
 static const float intensity = 1.0f; //0~1でデカいほど色が濃くなる
 static const float mass = 0.15f; //質量
 static const float3 bPos = float3(0, 0, 0); //ブラックホールの位置
-static const float speed = 0.1f; //回転速度
+static const float speed = 0.5f; //回転速度
 static const float3 materials[numMaterials] =
 {
     float3(1, 0, 0), //赤
@@ -112,17 +112,31 @@ RayHit rayMarch(float3 ro, float3 rd)
     float t = 0;
     RayHit result;
     float3 rp = ro;
+    float d = getDist(rp).dist;
     [loop]
     for (int i = 0; i < MAX_STEPS; i++)
     {
-        float3 acc = calcGravityNT(rp, bPos, mass);
+        //ニュートンの重力加速度を計算
+        float3 dir = rp - bPos;
+        float rSq = dot(dir, dir);
+        float r = sqrt(rSq);
+        float3 acc = -(2 * mass * dir) / (rSq * r);
+        //dtを計算
+        float rs = 2 * mass; //シュワルツシルト半径
+        float r_min = 1.5f * rs; //最小距離
+        float r_max = 10.0f * rs; //最大距離
+        float dt_min = SURF_DIST * rs; //最小dt
+        float dt_max = SURF_DIST * 100000 * rs; //最大dt
+        //float dt = lerp(dt_min, dt_max, smoothstep(r_min, r_max, r));
         float dt = SURF_DIST;
+        dt = min(dt, d);
+
         rd += acc * dt;
         rd = normalize(rd);
         rp = rp + rd * dt;
         
         SDFResult res = getDist(rp);
-        float d = res.dist;
+        d = res.dist;
         result.material = res.material;
         t += dt;
         
