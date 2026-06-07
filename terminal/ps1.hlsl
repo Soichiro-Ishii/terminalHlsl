@@ -11,12 +11,18 @@ cbuffer PixelShaderSettings : register(b0)
 };
 //デフォルトのターミナル画面
 Texture2D tex : register(t0);
+Texture2D img : register(t1);
 SamplerState smp : register(s0);
 
 static const float PI = 3.14159265358979;
 static const float brightness = 40; //明るさ 低いほど明るい
 static const float intensity = 1.0f; //0~1でデカいほど色が濃くなる
 static const float attraction = 4.0f;
+static const float3 waterCol = float3(0.2, 1.0, 0.4);
+static const float fluctuationRange1 = 0.2f;
+static const float fluctuationRange2 = 0.1f;
+static const float fluctuationRange3 = 0.4f;
+static const float backImgIntensity = 0.5f;
 //輝度計算
 float calcLuminance(float3 c)
 {
@@ -78,9 +84,15 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET
     float2 p = uv * 2.0 - 1.0;
     p.x *= res.x / res.y; //比率を合わせる
     p.y *= -1; //第三象限が左下に来るようにする
-    float fluctuation1 = sin(time) * 0.1f;
-    float fluctuation2 = cos(time / 2) * 0.15f;
-    float3 c = float3(0.0, 1.0 - fluctuation2, 0.4 - fluctuation1);
+    //揺らぎ
+    float fluctuation1 = sin(time);
+    float fluctuation2 = cos(time / 3 * 2);
+    float fluctuation3 = sin(time / 7 * 5);
+    float3 c = waterCol;
+    //各rgbの一定割合で揺らぎを加える
+    c.r += fluctuation1 * c.r * fluctuationRange1;
+    c.g += fluctuation2 * c.g * fluctuationRange2;
+    c.b += fluctuation3 * c.b * fluctuationRange3;
     //距離計算
     //水滴1--------------------
     float2 p_ = p;
@@ -110,7 +122,13 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET
     //輝度を計算する
     float luminance = calcLuminance(c);
     float4 cf = float4(c, 1.0f);
+    //背景画像を加算合成
+    float4 bgCol = img.Sample(smp, uv);
+    bgCol *= backImgIntensity; //背景画像の明るさを調整
+    cf += bgCol;
     cf.a *= luminance; //輝度に合わせてアルファを調整
     float4 texCol = tex.Sample(smp, uv);
+    luminance = calcLuminance(texCol.rgb);
+    texCol.a *= luminance; //テクスチャの輝度に合わせてアルファを調整
     return cf * intensity + texCol;
 }

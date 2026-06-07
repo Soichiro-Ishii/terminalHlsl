@@ -189,5 +189,7 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET
     float4 cf = float4(col, 1.0f);
     cf.a *= luminance; //輝度に合わせてアルファを調整
     float4 texCol = tex.Sample(smp, uv);
+    luminance = calcLuminance(texCol.rgb);
+    texCol.a *= luminance;
     return cf * intensity + texCol;
 }
