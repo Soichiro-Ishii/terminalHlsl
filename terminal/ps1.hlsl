@@ -17,6 +17,11 @@ static const float PI = 3.14159265358979;
 static const float brightness = 40; //明るさ 低いほど明るい
 static const float intensity = 1.0f; //0~1でデカいほど色が濃くなる
 static const float attraction = 4.0f;
+//輝度計算
+float calcLuminance(float3 c)
+{
+    return dot(c, float3(0.299, 0.587, 0.114));
+}
 //リピート
 float2 repeat(float2 p, float2 period)
 {
@@ -102,7 +107,10 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET
 
     //色計算
     c *= exp(-abs(d * brightness));
+    //輝度を計算する
+    float luminance = calcLuminance(c);
     float4 cf = float4(c, 1.0f);
+    cf.a *= luminance; //輝度に合わせてアルファを調整
     float4 texCol = tex.Sample(smp, uv);
     return cf * intensity + texCol;
 }

@@ -43,6 +43,11 @@ struct SDFResult
     float dist; //距離
     int material; //マテリアルID
 };
+//輝度計算
+float calcLuminance(float3 c)
+{
+    return dot(c, float3(0.299, 0.587, 0.114));
+}
 //2D回転行列
 float2x2 rot2D(float angle)
 {
@@ -179,8 +184,10 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET
     {
         col = materials[hit.material];
     }
-    
-    float4 cf = float4(col, 0.0f);
+    //輝度を計算する
+    float luminance = calcLuminance(col);
+    float4 cf = float4(col, 1.0f);
+    cf.a *= luminance; //輝度に合わせてアルファを調整
     float4 texCol = tex.Sample(smp, uv);
     return cf * intensity + texCol;
 }
