@@ -13,7 +13,7 @@
 "experimental.pixelShaderPath": "psのファイルのパス"
 ```
 を入れてください。詳しくは[Microsoftのサイト](https://learn.microsoft.com/en-us/windows/terminal/samples )で確認してください。
-## Credits
+# Credits
 
 Background sky texture based on imagery from NASA Scientific Visualization Studio:
 https://svs.gsfc.nasa.gov/4851/
