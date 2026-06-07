@@ -18,4 +18,7 @@
     <FxCompile Include="ps1.hlsl" />
     <FxCompile Include="ps2.hlsl" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\README.md" />
+  </ItemGroup>
 </Project>
