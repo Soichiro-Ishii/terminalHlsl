@@ -6,7 +6,8 @@
   [背景の画像](https://svs.gsfc.nasa.gov/4851/)はNASAの天の川銀河のskyMapを使用しています。<br>
   (NASAありがとう⸜(*ˊᵕˋ*)⸝‬ｱﾘｶﾞﾄｳ♡)<br>
 **注意**:ps2.hlslを使うにはexperimental.pixelShaderImagePathをセットする必要があります。<br>
-また、NvidiaのGPUとIntelの内蔵GPUでしか試してないのでそれ以外のGPUで動かない可能性があります。
+また、NvidiaのGPUとIntelの内蔵GPUでしか試してないのでそれ以外のGPUで動かない可能性があります。<br>
+* 設定でアクリル素材を有効にするとモダンになります。
 # PSを適用するには
 ターミナルにて設定->JSONファイルを開く、で設定ファイルを開きprofilesの中のdefaultなどに、
 ```
