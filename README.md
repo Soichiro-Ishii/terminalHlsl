@@ -1,7 +1,7 @@
 # 何ということでしょう！windowsのターミナルの画面をHLSLでいじることができます！
-* [ps1.hlsl](/terminal/ps1.hlsl) - 水滴が落ちてくるアニメーション
+* [ps1.hlsl](/terminal/ps1.hlsl) - 水滴が落ちてくるアニメーション<br>
   ![gif](psGif1.gif)
-* [ps2.hlsl](/terminal/ps2.hlsl) - ブラックホールの周りを回るアニメーション
+* [ps2.hlsl](/terminal/ps2.hlsl) - ブラックホールの周りを回るアニメーション<br>
   ![gif](psGif2.gif)<br>
   [背景の画像](https://svs.gsfc.nasa.gov/4851/)はNASAの天の川銀河のskyMapを使用しています。<br>
   (NASAありがとう⸜(*ˊᵕˋ*)⸝‬ｱﾘｶﾞﾄｳ♡)<br>
