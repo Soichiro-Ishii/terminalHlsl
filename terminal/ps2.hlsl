@@ -36,6 +36,7 @@ struct RayHit
     float t; //衝突点までの距離
     int material; //衝突したオブジェクトのマテリアルID
     float3 rd; //終了時の向き(空の表示で使用)
+    bool hit; //衝突したかどうか
 };
 struct SDFResult
 {
@@ -125,7 +126,9 @@ RayHit rayMarch(float3 ro, float3 rd)
         result.material = res.material;
         t += dt;
         
-        if (d < SURF_DIST || t > MAX_DIST)
+        result.hit = (d < SURF_DIST);
+        
+        if (result.hit || t > MAX_DIST)
             break;
         
     }
@@ -154,7 +157,7 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET
     RayHit hit = rayMarch(ro, rd);
     
     float3 col;
-    if (hit.t >= MAX_DIST)
+    if (!hit.hit)
     {
         col = getSkyColor(hit.rd); //背景色
     }
