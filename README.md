@@ -5,7 +5,6 @@
   ![gif](psGif2.gif)<br>
   [背景の画像](https://svs.gsfc.nasa.gov/4851/)はNASAの天の川銀河のskyMapを使用しています。<br>
   (NASAありがとう⸜(*ˊᵕˋ*)⸝‬ｱﾘｶﾞﾄｳ♡)<br>
-**注意**:ps2.hlslを使うにはexperimental.pixelShaderImagePathをセットする必要があります。<br>
 また、NvidiaのGPUとIntelの内蔵GPUでしか試してないのでそれ以外のGPUで動かない可能性があります。<br>
 * 設定でアクリル素材を有効にするとモダンになります。
 # PSを適用するには
@@ -14,6 +13,7 @@
 "experimental.pixelShaderPath": "psのファイルのパス"
 ```
 を入れてください。詳しくは[Microsoftのサイト](https://learn.microsoft.com/en-us/windows/terminal/samples )で確認してください。
+追加でexperimental.pixelShaderImagePathで画像のパスを設定しないといけません。
 # Credits
 
 Background sky texture based on imagery from NASA Scientific Visualization Studio:
