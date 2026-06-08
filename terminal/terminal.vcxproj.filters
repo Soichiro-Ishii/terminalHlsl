@@ -22,4 +22,18 @@
     <None Include="..\README.md" />
     <None Include="..\LICENSE" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\gif1.gif">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="..\gif2.gif">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="..\gif3.gif">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+    <Image Include="..\gif4.gif">
+      <Filter>リソース ファイル</Filter>
+    </Image>
+  </ItemGroup>
 </Project>

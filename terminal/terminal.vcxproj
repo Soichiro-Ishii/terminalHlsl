@@ -144,6 +144,12 @@
     <None Include="..\LICENSE" />
     <None Include="..\README.md" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\gif1.gif" />
+    <Image Include="..\gif2.gif" />
+    <Image Include="..\gif3.gif" />
+    <Image Include="..\gif4.gif" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
