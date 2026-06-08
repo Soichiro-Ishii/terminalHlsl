@@ -19,6 +19,7 @@ SamplerState smp : register(s0);
 #define MAX_STEPS 1000
 #define MAX_DIST 50
 #define SURF_DIST 0.01
+#define APPLY_SSAA 1
 static const float PI = 3.14159265358979f;
 static const float intensity = 1.0f; //0~1でデカいほど色が濃くなる
 static const float mass = 0.15f; //質量
@@ -38,6 +39,7 @@ struct RayHit
     int material; //衝突したオブジェクトのマテリアルID
     float3 rd; //終了時の向き(空の表示で使用)
     bool hit; //衝突したかどうか
+    float d; //最後の距離
 };
 struct SDFResult
 {
@@ -140,7 +142,7 @@ RayHit rayMarch(float3 ro, float3 rd)
         float r_min = 1.5f * rs; //最小距離
         float r_max = 10.0f * rs; //最大距離
         float dt_min = SURF_DIST * rs; //最小dt
-        float dt_max = SURF_DIST * 100 * rs; //最大dt
+        float dt_max = SURF_DIST * 500 * rs; //最大dt
         float dt = lerp(dt_min, dt_max, smoothstep(r_min, r_max, r));
         //float dt = SURF_DIST;
         dt = min(dt, d);
@@ -162,12 +164,11 @@ RayHit rayMarch(float3 ro, float3 rd)
     }
     result.t = t;
     result.rd = rd;
+    result.d = d;
     return result;
 }
 
-//uvはtex上の座標[0,1]
-//posはmicrosoftさんいわく、関係ない値だそうです。
-float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET
+float3 getColor(float2 uv)
 {
     //-1から1に座標を変換
     float2 p = uv * 2.0 - 1.0;
@@ -193,6 +194,63 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET
     {
         col = materials[hit.material];
     }
+    return col;
+}
+
+float3 getColorSSAA(float2 uv)
+{
+    float2 offsets[4] =
+    {
+        float2(-0.25f, -0.25f),
+        float2(0.25f, -0.25f),
+        float2(-0.25f, 0.25f),
+        float2(0.25f, 0.25f)
+    };
+    //uv座標内での1pxの大きさ
+    float2 dUV = 1.0f / res;
+    
+    float3 sumCol = float3(0, 0, 0);
+    [unroll]
+    for (int i = 0; i < 4; i++)
+    {
+    //-1から1に座標を変換
+        float2 p = (uv + offsets[i] * dUV) * 2.0 - 1.0;
+        p.x *= res.x / res.y; //比率を合わせる
+        p.y *= -1; //第三象限が左下に来るようにする
+    //回転
+        float2 angle = float2(time * speed, 0);
+    //レイの原点と方向
+        float3 ro = float3(sin(time * speed), 0, -cos(time * speed)) * 5;
+        float3 rd = normalize(float3(p, 1));
+        rd.xz = mul(rot2D(angle.x), rd.xz);
+        rd.yz = mul(rot2D(angle.y), rd.yz);
+    
+    //衝突判定
+        RayHit hit = rayMarch(ro, rd);
+    
+        float3 col;
+        if (!hit.hit)
+        {
+            col = getSkyColor(hit.rd); //背景色
+        }
+        else
+        {
+            col = materials[hit.material];
+        }
+        sumCol += col;
+    }
+    return sumCol / 4.0f; //平均を取る
+}
+
+//uvはtex上の座標[0,1]
+//posはmicrosoftさんいわく、関係ない値だそうです。
+float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET
+{
+#if APPLY_SSAA
+    float3 col = getColorSSAA(uv);
+#else
+    float3 col = getColor(uv);
+#endif
     //輝度を計算する
     float luminance = calcLuminance(col);
     float4 cf = float4(col, 1.0f);
