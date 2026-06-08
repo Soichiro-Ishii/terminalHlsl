@@ -15,7 +15,7 @@ Texture2D img : register(t1);
 SamplerState smp : register(s0);
 
 //初期値
-#define numMaterials 2
+#define numMaterials 3
 #define MAX_STEPS 1000
 #define MAX_DIST 50
 #define SURF_DIST 0.01
@@ -26,8 +26,9 @@ static const float3 bPos = float3(0, 0, 0); //ブラックホールの位置
 static const float speed = 0.5f; //回転速度
 static const float3 materials[numMaterials] =
 {
-    float3(1, 0, 0), //赤
-    float3(0, 0, 0) //黒
+    float3(0.8, 0.4, 0), //赤
+    float3(0, 0, 0), //黒
+    float3(0.5, 0.7, 0.9) //白
 };
 
 //構造体
@@ -90,14 +91,22 @@ SDFResult getDist(float3 rp)
 {
     float3 rp_ = rp;
     SDFResult result;
-    //普通の星
-    rp_ += float3(0, 0, 3);
+    //普通の星1
+    rp_ += float3(cos(time * 1.5), 0, sin(time * 1.5)) * 3;
     SDFResult s1 = { sdSphere(rp_, 1.0f), 0 };
     rp_ = rp;
     rp_ -= bPos;
     //ブラックホール
     SDFResult s2 = { sdSphere(rp_, 2 * mass), 1 }; //半径はシュワルツシルト半径
     result = opUnion(s1, s2);
+    //普通の星2
+    rp_ = rp;
+    float3 s3Pos = float3(cos(time) * 2, 0, sin(time)) * 5;
+    s3Pos.yz = mul(rot2D(PI / 3.5), s3Pos.yz);
+    rp_ += s3Pos;
+    
+    SDFResult s3 = { sdSphere(rp_, 1.0f), 2 };
+    result = opUnion(result, s3);
     return result;
 }
 
