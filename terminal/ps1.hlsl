@@ -110,7 +110,28 @@ float sdUnevenCapsule(float2 p, float r1, float r2, float h)
         return length(p - float2(0.0, h)) - r2;
     return dot(p, float2(a, b)) - r1;
 }
+//自身のセルとその周りとの距離を評価します
+float getRepeatedUnevenCapsuleDist(float2 p, float r1, float r2, float h, float2 period)
+{
+    float2 q = repeat(p, period);
+    float d = 1e10; //十分大きな値で初期化
+    //本来、自分のセルだけの計算だと、隣り合ったセルの水滴が一番近い場合その値を拾えず、
+    //最後の距離場を用いた色の計算で途切れが出るので周りのセルも評価しています。
+    //自分以外に、上にセルを移した場合や右に移した場合などを調べてます。
+    for (int i = -1; i <= 1; i++)
+    {
+        for (int j = -1; j <= 1; j++)
+        {
+            float offset = float2(i, j);
+            float2 cellCenter = offset * period;
+            float2 q_ = q - offset;
+            float dist = sdUnevenCapsule(q_, r1, r2, h);
+            d = min(d, dist);
+        }
 
+    }
+    return d;
+}
 //uvはtex上の座標[0,1]
 //posはmicrosoftさんいわく、関係ない値だそうです。
 float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET
@@ -133,22 +154,19 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET
     float2 p_ = p;
     p_.x += 0.5f;
     p_.y += time;
-    float2 q = repeat(p_, float2(2.0f, 1.5f));
-    float dWaterDrop = sdUnevenCapsule(q, 0.1f, 0.01f, 0.4f);
+    float dWaterDrop = getRepeatedUnevenCapsuleDist(p_, 0.1f, 0.01f, 0.4f, float2(2.0f, 1.5f));
     float d = dWaterDrop;
     //水滴2--------------------
     p_ = p;
     p_.x -= 1.0f;
     p_.y += time * 1.57;
-    q = repeat(p_, float2(2.75f, 1.5f));
-    float dWaterDrop2 = sdUnevenCapsule(q, 0.075f, 0.002f, 0.3f);
+    float dWaterDrop2 = getRepeatedUnevenCapsuleDist(p_, 0.075f, 0.002f, 0.3f, float2(2.75f, 1.5f));
     d = sminExp(d, dWaterDrop2, attraction);
     //水滴3--------------------
     p_ = p;
     p_.x -= 0.4f;
     p_.y += time * 1.89 / 3;
-    q = repeat(p_, float2(3.5f, 2.5f));
-    float dWaterDrop3 = sdUnevenCapsule(q, 0.2f, 0.01f, 0.6f);
+    float dWaterDrop3 = getRepeatedUnevenCapsuleDist(p_, 0.2f, 0.01f, 0.6f, float2(3.5f, 2.5f));
     d = sminExp(d, dWaterDrop3, attraction);
 
 
