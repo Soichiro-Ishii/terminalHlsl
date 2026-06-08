@@ -122,9 +122,9 @@ float getRepeatedUnevenCapsuleDist(float2 p, float r1, float r2, float h, float2
     {
         for (int j = -1; j <= 1; j++)
         {
-            float offset = float2(i, j);
+            float2 offset = float2(i, j);
             float2 cellCenter = offset * period;
-            float2 q_ = q - offset;
+            float2 q_ = q - cellCenter;
             float dist = sdUnevenCapsule(q_, r1, r2, h);
             d = min(d, dist);
         }
