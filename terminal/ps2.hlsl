@@ -17,7 +17,7 @@ SamplerState smp : register(s0);
 //初期値
 #define numMaterials 2
 #define MAX_STEPS 1000
-#define MAX_DIST 1000
+#define MAX_DIST 50
 #define SURF_DIST 0.01
 static const float PI = 3.14159265358979f;
 static const float intensity = 1.0f; //0~1でデカいほど色が濃くなる
@@ -131,9 +131,9 @@ RayHit rayMarch(float3 ro, float3 rd)
         float r_min = 1.5f * rs; //最小距離
         float r_max = 10.0f * rs; //最大距離
         float dt_min = SURF_DIST * rs; //最小dt
-        float dt_max = SURF_DIST * 100000 * rs; //最大dt
-        //float dt = lerp(dt_min, dt_max, smoothstep(r_min, r_max, r));
-        float dt = SURF_DIST;
+        float dt_max = SURF_DIST * 100 * rs; //最大dt
+        float dt = lerp(dt_min, dt_max, smoothstep(r_min, r_max, r));
+        //float dt = SURF_DIST;
         dt = min(dt, d);
 
         rd += acc * dt;
@@ -191,5 +191,6 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET
     float4 texCol = tex.Sample(smp, uv);
     luminance = calcLuminance(texCol.rgb);
     texCol.a *= luminance;
+    //return cf + float4(0.0f, 0.0f, 0.0f, 1.0f);
     return cf * intensity + texCol;
 }
