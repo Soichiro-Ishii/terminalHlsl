@@ -18,11 +18,46 @@ static const float PI = 3.14159265358979;
 static const float brightness = 40; //明るさ 低いほど明るい
 static const float intensity = 1.0f; //0~1でデカいほど色が濃くなる
 static const float attraction = 4.0f;
-static const float3 waterCol = float3(0.2, 1.0, 0.4);
-static const float fluctuationRange1 = 0.2f;
-static const float fluctuationRange2 = 0.1f;
-static const float fluctuationRange3 = 0.4f;
+static const float3 waterCol = float3(0.62, 0.78, 0.85);
+static const float fluctuationRange1 = 0.06f;
+static const float fluctuationRange2 = 0.04f;
+static const float fluctuationRange3 = 0.08f;
 static const float backImgIntensity = 0.5f;
+static const int padXPx = 16; //画面のパディングpx
+//デフォルトターミナル画面を取得
+float4 getTerminalScreen(float2 uv)
+{
+    //pxからuvに変換
+    float padX = padXPx / res.x;
+
+    // 左右の有効領域
+    float usableWidth = 1.0 - padX * 2.0;
+
+    // アスペクト比保持
+    float aspect = res.x / res.y;
+
+    // 左右に合わせた高さ
+    float usableHeight = usableWidth * aspect;
+
+    // 高さがはみ出る場合
+    usableHeight = min(usableHeight, 1.0);
+
+    float padY = (1.0 - usableHeight) * 0.5;
+
+    // UV変換
+    float2 paddedUV;
+    paddedUV.x = (uv.x - padX) / usableWidth;
+    paddedUV.y = (uv.y - padY) / usableHeight;
+
+    // 範囲外は透明
+    if (paddedUV.x < 0.0 || paddedUV.x > 1.0 ||
+        paddedUV.y < 0.0 || paddedUV.y > 1.0)
+    {
+        return float4(0, 0, 0, 0);
+    }
+
+    return tex.Sample(smp, paddedUV);
+}
 //輝度計算
 float calcLuminance(float3 c)
 {
@@ -127,7 +162,7 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET
     bgCol *= backImgIntensity; //背景画像の明るさを調整
     cf += bgCol;
     cf.a *= luminance; //輝度に合わせてアルファを調整
-    float4 texCol = tex.Sample(smp, uv);
+    float4 texCol = getTerminalScreen(uv);
     luminance = calcLuminance(texCol.rgb);
     texCol.a *= luminance; //テクスチャの輝度に合わせてアルファを調整
     return cf * intensity + texCol;
