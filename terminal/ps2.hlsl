@@ -32,6 +32,9 @@ static const float3 materials[numMaterials] =
     float3(0.5, 0.7, 0.9) //白
 };
 static const int padXPx = 16; //画面のパディングpx
+static const float skySat = 2.0f; //背景の空の彩度
+static const float cloudSize = 1.5f;
+static const float cloudDens = 0.75f;
 
 //構造体
 struct RayHit
@@ -41,12 +44,27 @@ struct RayHit
     float3 rd; //終了時の向き(空の表示で使用)
     bool hit; //衝突したかどうか
     float d; //最後の距離
+    float4 cloudCol;
 };
 struct SDFResult
 {
     float dist; //距離
     int material; //マテリアルID
 };
+struct DistResult
+{
+    float dist; //距離
+    int material; //マテリアルID
+    SDFResult s1;
+    SDFResult s2;
+};
+//彩度変える
+float3 Saturation(float3 color, float sat)
+{
+    float luminance = dot(color, float3(0.2126, 0.7152, 0.0722));
+    float3 col = lerp(luminance.xxx, color, sat);
+    return saturate(col);
+}
 //デフォルトターミナル画面を取得
 float4 getTerminalScreen(float2 uv)
 {
@@ -124,27 +142,38 @@ float sdSphere(float3 p, float r)
     return length(p) - r;
 }
 
-SDFResult getDist(float3 rp)
+SDFResult getDistStar1(float3 rp)
+{
+    float3 rp_ = rp - float3(cos(time * 1.5), 0, sin(time * 1.5)) * 3;
+    SDFResult res = { sdSphere(rp_, 1.0f), 0 };
+    return res;
+}
+
+SDFResult getDistStar2(float3 rp)
 {
     float3 rp_ = rp;
-    SDFResult result;
-    //普通の星1
-    rp_ += float3(cos(time * 1.5), 0, sin(time * 1.5)) * 3;
-    SDFResult s1 = { sdSphere(rp_, 1.0f), 0 };
-    rp_ = rp;
-    rp_ -= bPos;
-    //ブラックホール
-    SDFResult s2 = { sdSphere(rp_, 2 * mass), 1 }; //半径はシュワルツシルト半径
-    result = opUnion(s1, s2);
-    //普通の星2
-    rp_ = rp;
     float3 s3Pos = float3(cos(time) * 2, 0, sin(time)) * 5;
     s3Pos.yz = mul(rot2D(PI / 3.5), s3Pos.yz);
-    rp_ += s3Pos;
-    
-    SDFResult s3 = { sdSphere(rp_, 1.0f), 2 };
-    result = opUnion(result, s3);
-    return result;
+    rp_ -= s3Pos;
+    SDFResult res = { sdSphere(rp_, 1.0f), 2 };
+    return res;
+}
+
+DistResult getDist(float3 rp)
+{
+    SDFResult result;
+    //普通の星1
+    SDFResult s1 = getDistStar1(rp);
+    //ブラックホール
+    float3 rp_ = rp;
+    rp_ -= bPos;
+    SDFResult b = { sdSphere(rp_, 2 * mass), 1 }; //半径はシュワルツシルト半径
+    result = opUnion(s1, b);
+    //普通の星2
+    SDFResult s2 = getDistStar2(rp);
+    result = opUnion(result, s2);
+    DistResult distResult = { result.dist, result.material, s1, s2 };
+    return distResult;
 }
 
 //ニュートンの重力加速度を計算する関数
@@ -154,7 +183,6 @@ float3 calcGravityNT(float3 pos, float3 blackHolePos, float m)
     float rSq = dot(dir, dir);
     float r = sqrt(rSq);
     return -(2 * m * dir) / (rSq * r);
-
 }
 
 //衝突判定
@@ -164,6 +192,8 @@ RayHit rayMarch(float3 ro, float3 rd)
     RayHit result;
     float3 rp = ro;
     float d = getDist(rp).dist;
+    float alpha = 0;
+    float3 cloudCol = float3(0.0f, 0.0f, 0.0f);
     [loop]
     for (int i = 0; i < MAX_STEPS; i++)
     {
@@ -186,13 +216,27 @@ RayHit rayMarch(float3 ro, float3 rd)
         rd = normalize(rd);
         rp = rp + rd * dt;
         
-        SDFResult res = getDist(rp);
+        DistResult res = getDist(rp);
         d = res.dist;
         result.material = res.material;
         t += dt;
         
-        result.hit = (d < SURF_DIST);
+        //雲の処理
+        SDFResult clouds[2] = { res.s1, res.s2 };
+        for (int i = 0; i < 2; i++)
+        {
+            if (clouds[i].dist < cloudSize)
+            {
+                float x = saturate(1.0 - clouds[i].dist / cloudSize) * cloudDens;
+                float dens = smoothstep(0.0, 1.0, x);
+                float3 col = materials[clouds[i].material];
+
+                cloudCol += dens * col * (1.0f - alpha) * dt;
+                alpha += dens * 0.05 * (1.0f - alpha) * dt;
+            }
+        }
         
+        result.hit = (d < SURF_DIST);
         if (result.hit || t > MAX_DIST)
             break;
         
@@ -200,6 +244,7 @@ RayHit rayMarch(float3 ro, float3 rd)
     result.t = t;
     result.rd = rd;
     result.d = d;
+    result.cloudCol = float4(cloudCol, alpha);
     return result;
 }
 
@@ -223,11 +268,14 @@ float3 getColor(float2 uv)
     float3 col;
     if (!hit.hit)
     {
+        float3 cloudCol = hit.cloudCol.rgb;
         col = getSkyColor(hit.rd); //背景色
+        col = Saturation(col, skySat) + cloudCol;
     }
     else
     {
-        col = materials[hit.material];
+        float3 cloudCol = hit.cloudCol.rgb;
+        col = materials[hit.material] + cloudCol;
     }
     return col;
 }
@@ -266,11 +314,14 @@ float3 getColorSSAA(float2 uv)
         float3 col;
         if (!hit.hit)
         {
+            float3 cloudCol = hit.cloudCol.rgb;
             col = getSkyColor(hit.rd); //背景色
+            col = Saturation(col, skySat) + cloudCol;
         }
         else
         {
-            col = materials[hit.material];
+            float3 cloudCol = hit.cloudCol.rgb;
+            col = materials[hit.material] + cloudCol;
         }
         sumCol += col;
     }
